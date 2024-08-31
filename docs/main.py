@@ -1,51 +1,65 @@
 import ast
-import operator as op
-
-# Supported operators
-operators = {
-    ast.Add: op.add,
-    ast.Sub: op.sub,
-    ast.Mult: op.mul,
-    ast.Div: op.truediv,
-    ast.USub: op.neg  # Handle unary subtraction
-}
-
-def evaluate_expr(node):
-    if isinstance(node, ast.Constant):  # <number>
-        return node.value
-    elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
-        return operators[type(node.op)](evaluate_expr(node.left), evaluate_expr(node.right))
-    elif isinstance(node, ast.UnaryOp):  # <operator> <operand> e.g., -1
-        return operators[type(node.op)](evaluate_expr(node.operand))
-    else:
-        raise TypeError(node)
-
+import operator
 def calculate(expression):
     # Remove whitespace
     expression = expression.strip()
 
+# Define the operators mapping
+OPERATORS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv
+}
     # Check for empty input
     if not expression:
         raise ValueError("Input cannot be empty")
 
+def calculate(expression):
+    if not expression.strip():  # Handle empty or whitespace-only input
+        raise ValueError("Empty input is not allowed")
     # Check for invalid characters
     for char in expression:
         if not char.isdigit() and char not in "+-*/. ()":
             raise ValueError(f"Invalid character: {char}")
 
     try:
-        # Parse the expression
-        node = ast.parse(expression, mode='eval')
-
+        # Parse the expression into an Abstract Syntax Tree (AST)
+        tree = ast.parse(expression, mode='eval')
         # Evaluate the expression
-        result = evaluate_expr(node.body)
+        result = eval(expression)
 
+        # Define a function to recursively evaluate the AST
+        def eval_node(node):
+            if isinstance(node, ast.BinOp):
+                left = eval_node(node.left)
+                right = eval_node(node.right)
+                op = OPERATORS[type(node.op)]
+                return op(left, right)
+            elif isinstance(node, ast.UnaryOp):  # Handle unary operators
+                operand = eval_node(node.operand)
+                if isinstance(node.op, ast.UAdd):  # Unary plus
+                    return +operand
+                elif isinstance(node.op, ast.USub):  # Unary minus
+                    return -operand
+                else:
+                    raise TypeError(f"Unsupported UnaryOp type: {type(node.op)}")
+            elif isinstance(node, ast.Num):  # Python 3.7 and below
+                return node.n
+            elif isinstance(node, ast.Constant):  # Python 3.8+
+                return node.value
+            else:
+                raise TypeError(f"Unsupported AST node type: {type(node)}")
         # Check for non-numeric result
         if not isinstance(result, (int, float)):
             raise ValueError("Expression did not result in a number")
 
-        # Round the result to 10 decimal places to avoid floating point precision issues
-        return round(result, 10)
+        # Evaluate the AST and return the result
+        result = eval_node(tree.body)
+        return result
+
+    except (SyntaxError, TypeError, ValueError, ZeroDivisionError) as e:
+        raise
     except ZeroDivisionError:
         # Re-raise ZeroDivisionError
         raise

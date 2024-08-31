@@ -8,6 +8,10 @@ def calculate(expression):
         if not re.match(r'^[\d+\-*/.() ]+$', expression):
             raise ValueError("Expresión no válida")
         
+        # Verificar si la expresión está vacía o tiene solo espacios en blanco
+        if expression.strip() == "":
+            raise ValueError("Expresión vacía o solo contiene espacios en blanco")
+
         # Utilizar una precisión adecuada para manejar decimales
         result = eval(expression, {"__builtins__": None, "math": math})
         

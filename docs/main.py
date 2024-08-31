@@ -10,6 +10,9 @@ OPERATORS = {
 }
 
 def calculate(expression):
+    if not expression.strip():  # Handle empty or whitespace-only input
+        raise ValueError("Empty input is not allowed")
+
     try:
         # Parse the expression into an Abstract Syntax Tree (AST)
         tree = ast.parse(expression, mode='eval')
@@ -21,6 +24,14 @@ def calculate(expression):
                 right = eval_node(node.right)
                 op = OPERATORS[type(node.op)]
                 return op(left, right)
+            elif isinstance(node, ast.UnaryOp):  # Handle unary operators
+                operand = eval_node(node.operand)
+                if isinstance(node.op, ast.UAdd):  # Unary plus
+                    return +operand
+                elif isinstance(node.op, ast.USub):  # Unary minus
+                    return -operand
+                else:
+                    raise TypeError(f"Unsupported UnaryOp type: {type(node.op)}")
             elif isinstance(node, ast.Num):  # Python 3.7 and below
                 return node.n
             elif isinstance(node, ast.Constant):  # Python 3.8+

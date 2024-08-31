@@ -1,31 +1,36 @@
-import re
-import math
+import ast
+import operator
+
+# Define the operators mapping
+OPERATORS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv
+}
 
 def calculate(expression):
-    """Evalúa una expresión matemática con operadores básicos: +, -, *, /."""
     try:
-        # Validar que la expresión solo contenga números, operadores aritméticos y espacios
-        if not re.match(r'^[\d+\-*/.() ]+$', expression):
-            raise ValueError("Expresión no válida")
-        
-        # Verificar si la expresión está vacía o tiene solo espacios en blanco
-        if expression.strip() == "":
-            raise ValueError("Expresión vacía o solo contiene espacios en blanco")
-        
-        # Utilizar una precisión adecuada para manejar decimales
-        # Redefinir el entorno seguro para eval, limitando el acceso a builtins
-        allowed_locals = {"math": math}
-        result = eval(expression, {"__builtins__": None}, allowed_locals)
-        
-        # Redondear resultados con decimales para evitar problemas de precisión
-        if isinstance(result, float):
-            result = round(result, 10)
-        
+        # Parse the expression into an Abstract Syntax Tree (AST)
+        tree = ast.parse(expression, mode='eval')
+
+        # Define a function to recursively evaluate the AST
+        def eval_node(node):
+            if isinstance(node, ast.BinOp):
+                left = eval_node(node.left)
+                right = eval_node(node.right)
+                op = OPERATORS[type(node.op)]
+                return op(left, right)
+            elif isinstance(node, ast.Num):  # Python 3.7 and below
+                return node.n
+            elif isinstance(node, ast.Constant):  # Python 3.8+
+                return node.value
+            else:
+                raise TypeError(f"Unsupported AST node type: {type(node)}")
+
+        # Evaluate the AST and return the result
+        result = eval_node(tree.body)
         return result
-    
-    except ZeroDivisionError:
-        raise ValueError("División por cero")
-    except SyntaxError:
-        raise ValueError("Error en la expresión")
-    except Exception as e:
-        raise ValueError(f"Error en la expresión: {str(e)}")
+
+    except (SyntaxError, TypeError, ValueError, ZeroDivisionError) as e:
+        raise

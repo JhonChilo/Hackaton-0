@@ -12,7 +12,7 @@ OPERATORS = {
     ast.Div: operator.truediv
 }
     # Check for empty input
-    if not expression:
+if not expression:
         raise ValueError("Input cannot be empty")
 
 def calculate(expression):

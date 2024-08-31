@@ -1,8 +1,5 @@
 import ast
 import operator
-def calculate(expression):
-    # Remove whitespace
-    expression = expression.strip()
 
 # Define the operators mapping
 OPERATORS = {
@@ -11,13 +8,15 @@ OPERATORS = {
     ast.Mult: operator.mul,
     ast.Div: operator.truediv
 }
-    # Check for empty input
-if not expression:
-        raise ValueError("Input cannot be empty")
 
 def calculate(expression):
-    if not expression.strip():  # Handle empty or whitespace-only input
-        raise ValueError("Empty input is not allowed")
+    # Remove whitespace
+    expression = expression.strip()
+
+    # Check for empty input
+    if not expression:
+        raise ValueError("Input cannot be empty")
+
     # Check for invalid characters
     for char in expression:
         if not char.isdigit() and char not in "+-*/. ()":
@@ -26,8 +25,6 @@ def calculate(expression):
     try:
         # Parse the expression into an Abstract Syntax Tree (AST)
         tree = ast.parse(expression, mode='eval')
-        # Evaluate the expression
-        result = eval(expression)
 
         # Define a function to recursively evaluate the AST
         def eval_node(node):
@@ -50,18 +47,17 @@ def calculate(expression):
                 return node.value
             else:
                 raise TypeError(f"Unsupported AST node type: {type(node)}")
+
+        # Evaluate the AST and return the result
+        result = eval_node(tree.body)
+
         # Check for non-numeric result
         if not isinstance(result, (int, float)):
             raise ValueError("Expression did not result in a number")
 
-        # Evaluate the AST and return the result
-        result = eval_node(tree.body)
         return result
 
     except (SyntaxError, TypeError, ValueError, ZeroDivisionError) as e:
-        raise
-    except ZeroDivisionError:
-        # Re-raise ZeroDivisionError
         raise
     except Exception:
         # Catch all other exceptions and raise a SyntaxError
